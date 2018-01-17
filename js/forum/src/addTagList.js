@@ -5,6 +5,7 @@ import LinkButton from 'flarum/components/LinkButton';
 
 import TagLinkButton from 'flarum/tags/components/TagLinkButton';
 import TagsPage from 'flarum/tags/components/TagsPage';
+import TagsSeparator from 'flarum/tags/components/TagsSeparator';
 import sortTags from 'flarum/tags/utils/sortTags';
 
 export default function() {
@@ -19,10 +20,8 @@ export default function() {
 
     if (app.current instanceof TagsPage) return;
 
-    items.add('separator', Separator.component(), -10);
-
+    var tags = app.store.all('tags');
     const params = this.stickyParams();
-    const tags = app.store.all('tags');
     const currentTag = this.currentTag();
 
     const addTag = tag => {
@@ -39,17 +38,12 @@ export default function() {
       .filter(tag => tag.position() !== null && (!tag.isChild() || (currentTag && (tag.parent() === currentTag || tag.parent() === currentTag.parent()))))
       .forEach(addTag);
 
-    const more = tags
+    items.add('tags-separator', TagsSeparator.component(), -10);
+
+    tags = tags
       .filter(tag => tag.position() === null)
       .sort((a, b) => b.discussionsCount() - a.discussionsCount());
 
-    more.splice(0, 3).forEach(addTag);
-
-    if (more.length) {
-      items.add('moreTags', LinkButton.component({
-        children: app.translator.trans('flarum-tags.forum.index.more_link'),
-        href: app.route('tags')
-      }), -10);
-    }
+    tags.forEach(addTag);
   });
 }

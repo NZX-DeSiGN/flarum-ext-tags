@@ -259,10 +259,10 @@ System.register('flarum/tags/addTagLabels', ['flarum/extend', 'flarum/components
 });;
 'use strict';
 
-System.register('flarum/tags/addTagList', ['flarum/extend', 'flarum/components/IndexPage', 'flarum/components/Separator', 'flarum/components/LinkButton', 'flarum/tags/components/TagLinkButton', 'flarum/tags/components/TagsPage', 'flarum/tags/utils/sortTags'], function (_export, _context) {
+System.register('flarum/tags/addTagList', ['flarum/extend', 'flarum/components/IndexPage', 'flarum/components/Separator', 'flarum/components/LinkButton', 'flarum/tags/components/TagLinkButton', 'flarum/tags/components/TagsPage', 'flarum/tags/components/TagsSeparator', 'flarum/tags/utils/sortTags'], function (_export, _context) {
   "use strict";
 
-  var extend, IndexPage, Separator, LinkButton, TagLinkButton, TagsPage, sortTags;
+  var extend, IndexPage, Separator, LinkButton, TagLinkButton, TagsPage, TagsSeparator, sortTags;
 
   _export('default', function () {
     // Add a link to the tags page, as well as a list of all the tags,
@@ -276,10 +276,8 @@ System.register('flarum/tags/addTagList', ['flarum/extend', 'flarum/components/I
 
       if (app.current instanceof TagsPage) return;
 
-      items.add('separator', Separator.component(), -10);
-
-      var params = this.stickyParams();
       var tags = app.store.all('tags');
+      var params = this.stickyParams();
       var currentTag = this.currentTag();
 
       var addTag = function addTag(tag) {
@@ -296,20 +294,15 @@ System.register('flarum/tags/addTagList', ['flarum/extend', 'flarum/components/I
         return tag.position() !== null && (!tag.isChild() || currentTag && (tag.parent() === currentTag || tag.parent() === currentTag.parent()));
       }).forEach(addTag);
 
-      var more = tags.filter(function (tag) {
+      items.add('tags-separator', TagsSeparator.component(), -10);
+
+      tags = tags.filter(function (tag) {
         return tag.position() === null;
       }).sort(function (a, b) {
         return b.discussionsCount() - a.discussionsCount();
       });
 
-      more.splice(0, 3).forEach(addTag);
-
-      if (more.length) {
-        items.add('moreTags', LinkButton.component({
-          children: app.translator.trans('flarum-tags.forum.index.more_link'),
-          href: app.route('tags')
-        }), -10);
-      }
+      tags.forEach(addTag);
     });
   });
 
@@ -326,6 +319,8 @@ System.register('flarum/tags/addTagList', ['flarum/extend', 'flarum/components/I
       TagLinkButton = _flarumTagsComponentsTagLinkButton.default;
     }, function (_flarumTagsComponentsTagsPage) {
       TagsPage = _flarumTagsComponentsTagsPage.default;
+    }, function (_flarumTagsComponentsTagsSeparator) {
+      TagsSeparator = _flarumTagsComponentsTagsSeparator.default;
     }, function (_flarumTagsUtilsSortTags) {
       sortTags = _flarumTagsUtilsSortTags.default;
     }],
@@ -1085,6 +1080,53 @@ System.register('flarum/tags/components/TagsPage', ['flarum/Component', 'flarum/
     }
   };
 });;
+"use strict";
+
+System.register("flarum/tags/components/TagsSeparator", ["flarum/Component"], function (_export, _context) {
+  "use strict";
+
+  var Component, TagsSeparator;
+  return {
+    setters: [function (_flarumComponent) {
+      Component = _flarumComponent.default;
+    }],
+    execute: function () {
+      TagsSeparator = function (_Component) {
+        babelHelpers.inherits(TagsSeparator, _Component);
+
+        function TagsSeparator() {
+          babelHelpers.classCallCheck(this, TagsSeparator);
+          return babelHelpers.possibleConstructorReturn(this, (TagsSeparator.__proto__ || Object.getPrototypeOf(TagsSeparator)).apply(this, arguments));
+        }
+
+        babelHelpers.createClass(TagsSeparator, [{
+          key: "view",
+          value: function view() {
+            return m(
+              "li",
+              { "class": "item-tags" },
+              m(
+                "a",
+                { "class": "hasIcon", title: "Tags", href: "/tags", active: "false" },
+                m("i", { "class": "icon fa fa-tags Button-icon" }),
+                m(
+                  "span",
+                  { "class": "Button-label" },
+                  "Tags"
+                )
+              )
+            );
+          }
+        }]);
+        return TagsSeparator;
+      }(Component);
+
+      TagsSeparator.isListItem = true;
+
+      _export("default", TagsSeparator);
+    }
+  };
+});;
 'use strict';
 
 System.register('flarum/tags/helpers/tagIcon', [], function (_export, _context) {
@@ -1317,48 +1359,48 @@ System.register('flarum/tags/models/Tag', ['flarum/Model', 'flarum/utils/mixin',
 "use strict";
 
 System.register("flarum/tags/utils/sortTags", [], function (_export, _context) {
-  "use strict";
+    "use strict";
 
-  function sortTags(tags) {
-    return tags.slice(0).sort(function (a, b) {
-      var aPos = a.position();
-      var bPos = b.position();
+    function sortTags(tags) {
+        return tags.slice(0).sort(function (a, b) {
+            var aPos = a.position();
+            var bPos = b.position();
 
-      // If they're both secondary tags, sort them by their discussions count,
-      // descending.
-      if (aPos === null && bPos === null) return b.discussionsCount() - a.discussionsCount();
+            // If they're both secondary tags, sort them by their discussions count,
+            // descending.
+            if (aPos === null && bPos === null) return b.discussionsCount() - a.discussionsCount();
 
-      // If just one is a secondary tag, then the primary tag should
-      // come first.
-      if (bPos === null) return -1;
-      if (aPos === null) return 1;
+            // If just one is a secondary tag, then the primary tag should
+            // come first.
+            if (bPos === null) return -1;
+            if (aPos === null) return 1;
 
-      // If we've made it this far, we know they're both primary tags. So we'll
-      // need to see if they have parents.
-      var aParent = a.parent();
-      var bParent = b.parent();
+            // If we've made it this far, we know they're both primary tags. So we'll
+            // need to see if they have parents.
+            var aParent = a.parent();
+            var bParent = b.parent();
 
-      // If they both have the same parent, then their positions are local,
-      // so we can compare them directly.
-      if (aParent === bParent) return aPos - bPos;
+            // If they both have the same parent, then their positions are local,
+            // so we can compare them directly.
+            if (aParent === bParent) return aPos - bPos;
 
-      // If they are both child tags, then we will compare the positions of their
-      // parents.
-      else if (aParent && bParent) return aParent.position() - bParent.position();
+            // If they are both child tags, then we will compare the positions of their
+            // parents.
+            else if (aParent && bParent) return aParent.position() - bParent.position();
 
-        // If we are comparing a child tag with its parent, then we let the parent
-        // come first. If we are comparing an unrelated parent/child, then we
-        // compare both of the parents.
-        else if (aParent) return aParent === b ? 1 : aParent.position() - bPos;else if (bParent) return bParent === a ? -1 : aPos - bParent.position();
+                // If we are comparing a child tag with its parent, then we let the parent
+                // come first. If we are comparing an unrelated parent/child, then we
+                // compare both of the parents.
+                else if (aParent) return aParent === b ? 1 : aParent.position() - bPos;else if (bParent) return bParent === a ? -1 : aPos - bParent.position();
 
-      return 0;
-    });
-  }
+            return 0;
+        });
+    }
 
-  _export("default", sortTags);
+    _export("default", sortTags);
 
-  return {
-    setters: [],
-    execute: function () {}
-  };
+    return {
+        setters: [],
+        execute: function () {}
+    };
 });
